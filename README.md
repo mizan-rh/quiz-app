@@ -1,7 +1,9 @@
-what I have done:
-route changes for admin and user. 
-middleware recreated. 
-dynamic dashboard added, (but not seamlessly works)
-email verification disable. 
-prisma schema changed. 
-p.s. I will work on it in home. 
+## ✅ What I Have Done
+
+- Route changes for admin and candidate user roles
+- Middleware recreated for auth + role-based access control
+- Dynamic dashboard redirect based on user role (admin/candidate)
+- Email verification temporarily disabled
+- Prisma schema updated with `Role` enum and relation
+- Post-login redirection logic partially working (needs refinement)
+- P.S. I will continue working on it at home
