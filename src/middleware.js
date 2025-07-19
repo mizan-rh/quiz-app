@@ -1,57 +1,48 @@
-// export { auth as middleware } from "@/auth";
+import { getToken } from "next-auth/jwt";
+import { NextResponse } from "next/server";
 
-import NextAuth from "next-auth";
-import authConfig from "./auth.config";
-import {
-  DEFAULT_LOGIN_REDIRECT,
-  apiAuthPrefix,
-  authRoutes,
-  publicRoutes,
-} from "@/routes";
+const PUBLIC_PATHS = ["/", "/auth/login", "/auth/register", "/about"];
 
-const { auth } = NextAuth(authConfig);
+export async function middleware(req) {
+  const pathname = req.nextUrl.pathname;
 
-export default auth((req) => {
-  const { nextUrl } = req;
-  const isLoggedIn = !!req.auth;
-
-  const isApiAuthRoute = nextUrl.pathname.startsWith(apiAuthPrefix);
-  const isPublicRoute = publicRoutes.includes(nextUrl.pathname);
-  const isAuthRoute = authRoutes.includes(nextUrl.pathname);
-
-  if (isApiAuthRoute) {
-    // Do nothing for API auth routes
-    return;
+  // Allow public paths without auth
+  if (PUBLIC_PATHS.some((path) => pathname.startsWith(path))) {
+    return NextResponse.next();
   }
 
-  if (isAuthRoute) {
-    if (isLoggedIn) {
-      // Redirect logged-in users away from auth routes
-      return Response.redirect(new URL(DEFAULT_LOGIN_REDIRECT, nextUrl));
+  // Get token from cookie
+  const token = await getToken({ req, secret: process.env.AUTH_SECRET });
+
+  // If no token, redirect to login with callback
+  if (!token) {
+    const loginUrl = new URL("/auth/login", req.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // If user is on auth pages but logged in, redirect based on role
+  if (pathname.startsWith("/auth")) {
+    if (token.role === "ADMIN") {
+      return NextResponse.redirect(new URL("/dashboard/admin", req.url));
+    } else if (token.role === "CANDIDATE") {
+      return NextResponse.redirect(new URL("/dashboard/candidate", req.url));
     }
-    // Allow unauthenticated users to access auth routes
-    return;
   }
 
-  if (!isLoggedIn && !isPublicRoute) {
-    // Redirect unauthenticated users to the login page
-    let callbackUrl = nextUrl.pathname;
-    if (nextUrl.search) {
-      callbackUrl += nextUrl.search;
-    }
-
-    const encodedCallbackUrl = encodeURIComponent(callbackUrl);
-
-    return Response.redirect(
-      new URL(`/auth/login?callbackUrl=${encodedCallbackUrl}`, nextUrl)
-    );
+  // Protect dashboard routes by role
+  if (pathname.startsWith("/dashboard/admin") && token.role !== "ADMIN") {
+    return NextResponse.redirect(new URL("/auth/login", req.url));
   }
 
-  // Allow access to public routes or logged-in users
-  return;
-});
+  if (pathname.startsWith("/dashboard/candidate") && token.role !== "CANDIDATE") {
+    return NextResponse.redirect(new URL("/auth/login", req.url));
+  }
 
-// Optionally, don't invoke Middleware on some paths
+  // Otherwise allow
+  return NextResponse.next();
+}
+
 export const config = {
-  matcher: ["/((?!.+\\.[\\w]+$|_next).*)", "/", "/(api|trpc)(.*)"],
+  matcher: ["/dashboard/:path*", "/auth/:path*", "/about", "/"],
 };

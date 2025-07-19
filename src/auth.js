@@ -1,8 +1,8 @@
+import { PrismaAdapter } from "@auth/prisma-adapter";
 import NextAuth from "next-auth";
 import authConfig from "./auth.config";
-import { getUserById } from "./data/user";
 import { getAccountByUserId } from "./data/account";
-import { PrismaAdapter } from "@auth/prisma-adapter";
+import { getUserById } from "./data/user";
 import { db } from "./lib/db";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -16,7 +16,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async linkAccount({ user }) {
       await db.user.update({
         where: { id: user.id },
-        data: { emailVerified: new Date() },
+        // data: { emailVerified: new Date() },
       });
     },
   },
@@ -32,7 +32,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       const existingUser = await getUserById(user.id);
 
       // Prevent sign in without email verification
-      if (!existingUser?.emailVerified) return false;
+      // if (!existingUser?.emailVerified) return false;
 
       return true;
     },

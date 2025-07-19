@@ -1,8 +1,8 @@
 "use server";
 
-import { db } from "@/lib/db";
 import { getUserByEmail } from "@/data/user";
 import { getVerificationTokenByToken } from "@/data/verification-token";
+import { db } from "@/lib/db";
 
 export const newVerification = async (token) => {
   const existingToken = await getVerificationTokenByToken(token);
@@ -26,7 +26,7 @@ export const newVerification = async (token) => {
   await db.user.update({
     where: { id: existingUser.id },
     data: {
-      emailVerified: new Date(),
+      // emailVerified: new Date(),
       email: existingToken.email,
     },
   });

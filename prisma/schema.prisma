@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -22,6 +22,7 @@ model User {
   accounts      Account[]
   assignedTests AssignedTest[]
   testSessions  UserTestSession[]
+  role Role @default(CANDIDATE)
 }
 
 model Account {
@@ -64,13 +65,14 @@ model PasswordResetToken {
 model Test {
   id            String            @id @default(uuid())
   name          String
-  position      String
   date          DateTime
   durationMin   Int
   groups        Group[]
   assignedTests AssignedTest[]
   testSessions  UserTestSession[]
   testQuestions TestQuestion[]
+  positionId   String
+  position     Position @relation(fields: [positionId], references: [id])
 }
 
 model AssignedTest {
@@ -144,4 +146,13 @@ model UserAnswer {
   response      String // For MCQ: choice index as string; for TEXT: answer
   autoScore     Float? // For MCQ
   givenScore    Float? // For TEXT (manual evaluation)
+}
+model Position {
+  id       String   @id @default(uuid())
+  title    String
+  quizzes  Test[]
+}
+enum Role {
+  ADMIN
+  CANDIDATE
 }
